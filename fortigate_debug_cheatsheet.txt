@@ -1,0 +1,303 @@
+FortiGate Debug Cheat Sheet (Standardized Placeholders)
+
+Placeholders:
+  <srcip>   = source IP address
+  <dstip>   = remote/destination IP address
+  <proto>   = protocol (e.g. tcp, udp, icmp or 6/17/1 depending on command)
+  <dstport> = destination TCP/UDP port
+
+
+1. Global debug boilerplate
+---------------------------
+
+Always start with:
+
+  diag debug reset
+  diag debug disable
+  diag debug console timestamp enable
+
+Optional (see CLI commands being executed by you / GUI):
+
+  diag debug cli 1      # enable CLI debug
+  diag debug cli 0      # disable CLI debug
+
+
+2. Traffic / Policy / Session (flow debug)
+------------------------------------------
+
+Basic “what policy is hitting / why dropped?”:
+
+  diag debug reset
+  diag debug disable
+  diag debug flow filter clear
+  diag debug flow filter saddr <srcip>
+  diag debug flow filter daddr <dstip>
+  # or filter by destination port:
+  # diag debug flow filter dport <dstport>
+
+  diag debug flow show console enable
+  diag debug flow trace start 100
+  diag debug enable
+
+Stop when done:
+
+  diag debug disable
+  diag debug flow trace stop
+  diag debug flow filter clear
+
+Useful variations:
+
+  diag debug flow filter proto <proto>        # e.g. 6 for TCP, 17 for UDP
+  diag debug flow filter vd <vdom>           # specific VDOM
+  diag debug flow show function-name enable
+
+
+3. Packet capture (on-box sniffer)
+----------------------------------
+
+Quick live capture:
+
+  diag sniffer packet <interface> "<filter>" <verbose> <count>
+
+Examples using standardized placeholders:
+
+  # Capture all traffic to/from a specific host
+  diag sniffer packet any "host <srcip>" 4 0
+
+  # Capture a specific protocol and destination port to a remote IP
+  diag sniffer packet port1 "<proto> port <dstport> and host <dstip>" 4 50
+
+  # Capture a subnet (no placeholders needed here)
+  diag sniffer packet port2 "net 192.168.1.0/24" 3 0
+
+Verbosity:
+  1 = basic
+  2 = with MAC
+  3 = include more header info
+  4 = include payload hex
+
+
+4. IPsec VPN debug
+------------------
+
+IKE negotiation:
+
+  diag debug reset
+  diag debug disable
+
+  diag vpn ike log-filter clear
+  diag vpn ike log-filter src-addr4 <srcip>     # local IP (FortiGate side)
+  diag vpn ike log-filter dst-addr4 <dstip>     # remote gateway IP
+  diag vpn ike log-filter name <phase1-name>    # optional
+
+  diag debug app ike -1
+  diag debug enable
+
+Stop debug:
+
+  diag debug disable
+  diag debug app ike 0
+  diag vpn ike log-filter clear
+
+Quick status checks:
+
+  diag vpn ike gateway list
+  diag vpn tunnel list
+  diag vpn tunnel flush           # clears SA (careful in production)
+
+IPsec traffic / selectors:
+
+  diag debug app IPsec -1
+  diag debug enable
+  # generate traffic
+  diag debug disable
+  diag debug app IPsec 0
+
+
+5. SSL VPN debug
+----------------
+
+Core SSL VPN:
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app sslvpn -1
+  diag debug enable
+  # user connects now
+  diag debug disable
+  diag debug app sslvpn 0
+
+User authentication (SAML/LDAP/RADIUS/etc.):
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app fnbamd -1
+  diag debug app sslvpn -1        # often useful together
+  diag debug enable
+  # user attempts login
+  diag debug disable
+
+  diag debug app fnbamd 0
+  diag debug app sslvpn 0
+
+VPN status:
+
+  diag vpn ssl stats
+  diag vpn ssl list
+
+
+6. Routing and connectivity
+---------------------------
+
+General route table:
+
+  get router info routing-table all
+  get router info routing-table database
+
+ECMP / policy route issues – check:
+
+  get router info policy
+  diag ip route list
+
+Dynamic routing debug:
+
+OSPF:
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app ospfd -1
+  diag debug enable
+  # wait for events
+  diag debug disable
+  diag debug app ospfd 0
+
+BGP:
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app bgp -1
+  diag debug enable
+  # cause route changes / resets
+  diag debug disable
+  diag debug app bgp 0
+
+
+7. User authentication / FSSO / SSO
+-----------------------------------
+
+General auth engine:
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app fnbamd -1
+  diag debug enable
+  # attempt login (VPN, captive portal, etc.)
+  diag debug disable
+  diag debug app fnbamd 0
+
+FSSO:
+
+  diag debug app fnbamd -1
+  diag debug app wad -1          # for proxy/explicit
+  diag debug enable
+  # generate traffic
+  diag debug disable
+  diag debug app fnbamd 0
+  diag debug app wad 0
+
+Check login sessions:
+
+  diag firewall auth list
+
+
+8. High Availability (HA)
+-------------------------
+
+HA status:
+
+  get sys ha status
+  diag sys ha status
+  diag sys ha history
+
+HA debug (be careful, can be quite verbose):
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app hatalk -1
+  diag debug app had -1
+  diag debug enable
+  # perform HA failover / wait for event
+  diag debug disable
+
+  diag debug app hatalk 0
+  diag debug app had 0
+
+
+9. UTM: IPS, Application Control, Web Filter
+--------------------------------------------
+
+These debugs get noisy fast; use only when you actually need them.
+
+IPS:
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app ipsmonitor -1
+  diag debug enable
+  # generate traffic
+  diag debug disable
+  diag debug app ipsmonitor 0
+
+Application Control / Web filtering via WAD:
+
+  diag debug reset
+  diag debug disable
+
+  diag debug app wad -1
+  diag debug enable
+  # browse / generate HTTP(S) traffic
+  diag debug disable
+  diag debug app wad 0
+
+Web filter/logging checks:
+
+  diag webfilter status
+  diag debug app urlfilter -1
+  diag debug enable
+  diag debug disable
+  diag debug app urlfilter 0
+
+
+10. System / Performance
+------------------------
+
+CPU / memory:
+
+  diag sys top           # real-time, press q to quit
+  get system performance status
+  get system performance top
+
+Process-level debug:
+
+  diag debug crashlog read
+  diag debug app miglogd -1
+  diag debug enable
+  diag debug disable
+  diag debug app miglogd 0
+
+
+11. Always turn it off
+----------------------
+
+When in doubt, clean up:
+
+  diag debug disable
+  diag debug reset
+  diag debug cli 0

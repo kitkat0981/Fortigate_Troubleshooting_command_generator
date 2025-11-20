@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FortiGate Debug Command Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 FortiGate Debug Command Generator</h1>
+            <p class="subtitle">Generate troubleshooting commands for FortiGate firewalls</p>
+        </header>
+
+        <div class="main-content">
+            <div class="input-panel">
+                <h2>Configuration</h2>
+                
+                <form id="configForm">
+                    <div class="form-group">
+                        <label for="srcip">Source IP Address (saddr) <span class="optional">(optional)</span></label>
+                        <input type="text" id="srcip" name="srcip" placeholder="192.168.1.100 (leave empty if unknown)" 
+                               pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                        <small>4 octet IP address (e.g., 192.168.1.100). Leave empty if unknown or not required.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="daddr">Destination IP Address (daddr) <span class="optional">(optional)</span></label>
+                        <input type="text" id="daddr" name="daddr" placeholder="10.0.0.1 (leave empty if unknown)" 
+                               pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                        <small>4 octet IP address (e.g., 10.0.0.1). Leave empty if unknown or not required.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="proto">Protocol (proto) <span class="optional">(optional)</span></label>
+                        <select id="proto" name="proto">
+                            <option value="">Select Protocol (optional)</option>
+                            <option value="1">1 - ICMP</option>
+                            <option value="6">6 - TCP</option>
+                            <option value="17">17 - UDP</option>
+                        </select>
+                        <small>1 for ICMP, 6 for TCP, 17 for UDP. Leave unselected if unknown or not required.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dstport">Destination Port (dstport) <span class="optional">(optional)</span></label>
+                        <input type="number" id="dstport" name="dstport" placeholder="443 (leave empty if unknown)" 
+                               min="22" max="65535">
+                        <small>TCP/UDP port (22-65535, e.g., 80, 443, 22). Leave empty if unknown or not required.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="troubleshootTopic">Troubleshooting Topic</label>
+                        <select id="troubleshootTopic" name="troubleshootTopic" required>
+                            <option value="">Select Topic</option>
+                            <option value="traffic">Traffic / Policy / Session (Flow Debug)</option>
+                            <option value="ipsec">IPsec VPN</option>
+                            <option value="sslvpn">SSL VPN</option>
+                            <option value="routing">Routing and Connectivity (OSPF/BGP)</option>
+                            <option value="auth">User Authentication / FSSO / SSO</option>
+                            <option value="ha">High Availability (HA)</option>
+                            <option value="utm">UTM (IPS, Application Control, Web Filter)</option>
+                            <option value="system">System / Performance</option>
+                        </select>
+                        <small>Select what you want to troubleshoot</small>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="enableChatGPT" name="enableChatGPT">
+                            Enable ChatGPT suggestions (requires API key)
+                        </label>
+                    </div>
+
+                    <div class="api-key-section">
+                        <h3>ChatGPT API Key Settings</h3>
+                        
+                        <div class="form-group">
+                            <label for="apiKey">OpenAI API Key</label>
+                            <input type="password" id="apiKey" name="apiKey" placeholder="sk-..." autocomplete="off">
+                            <small>Your API key is encrypted and stored locally in your browser only</small>
+                        </div>
+
+                        <div class="form-group" id="passwordGroup" style="display: none;">
+                            <label for="encryptionPassword">Encryption Password</label>
+                            <input type="password" id="encryptionPassword" name="encryptionPassword" placeholder="Enter password to encrypt/decrypt API key" autocomplete="off">
+                            <small>This password encrypts your API key. You'll need it to decrypt later. It's never stored.</small>
+                        </div>
+
+                        <div class="api-key-buttons">
+                            <button type="button" class="btn-secondary" id="saveApiKeyBtn">Save API Key (Encrypted)</button>
+                            <button type="button" class="btn-secondary" id="loadApiKeyBtn">Load Saved API Key</button>
+                            <button type="button" class="btn-secondary" id="clearApiKeyBtn">Clear Saved Key</button>
+                        </div>
+
+                        <div id="apiKeyStatus" class="api-key-status"></div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="generateBtn">
+                        Generate Commands
+                    </button>
+                </form>
+            </div>
+
+            <div class="output-panel" id="outputPanel" style="display: none;">
+                <h2>Generated Commands</h2>
+                <div id="commandSections"></div>
+            </div>
+        </div>
+
+        <div id="chatgptPanel" class="chatgpt-panel" style="display: none;">
+            <h3>ChatGPT Suggestions</h3>
+            <div id="chatgptOutput"></div>
+        </div>
+    </div>
+
+    <script src="crypto-utils.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
