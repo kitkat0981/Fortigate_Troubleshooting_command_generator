@@ -787,6 +787,8 @@ function renderCommands(sections) {
 
 // Wait for DOM to be ready before attaching event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing form handlers...');
+    
     // Form submission handler
     const configForm = document.getElementById('configForm');
     if (!configForm) {
@@ -794,7 +796,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    console.log('Form found, attaching submit handler...');
+    
     configForm.addEventListener('submit', (e) => {
+        console.log('Form submitted!');
         e.preventDefault();
         
         const srcip = document.getElementById('srcip').value.trim();
@@ -843,11 +848,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Generate and render commands
         try {
+            console.log('Generating commands with:', { topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount });
             const sections = generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount);
+            console.log('Generated sections:', sections);
             renderCommands(sections);
+            console.log('Commands rendered successfully');
         } catch (error) {
             console.error('Error generating commands:', error);
-            alert('An error occurred while generating commands. Please check the console for details.');
+            console.error('Error stack:', error.stack);
+            alert('An error occurred while generating commands: ' + error.message + '. Please check the console for details.');
         }
     });
     
@@ -884,6 +893,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    console.log('All event listeners attached successfully');
 });
 
 
