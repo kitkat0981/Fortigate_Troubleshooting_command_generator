@@ -577,7 +577,7 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
             sectionNum++;
             sections.push({
                 title: `${sectionNum++}. Packet Capture (Sniffer)`,
-                commands: generateSnifferCommands(srcip, daddr, proto, dstport),
+                commands: generateSnifferCommands(srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount),
                 type: 'sniffer'
             });
             break;
