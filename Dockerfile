@@ -5,7 +5,6 @@ FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/
 COPY styles.css /usr/share/nginx/html/
 COPY app.js /usr/share/nginx/html/
-COPY crypto-utils.js /usr/share/nginx/html/
 COPY fortigate_debug_cheatsheet.txt /usr/share/nginx/html/
 
 # Copy custom nginx configuration (optional, for better defaults)
