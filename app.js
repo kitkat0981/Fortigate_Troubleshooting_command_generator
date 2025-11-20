@@ -70,11 +70,11 @@ function generateSnifferCommands(srcip, daddr, proto, dstport, interface, verbos
     const snifferVerbosity = verbosity && verbosity.trim() ? verbosity.trim() : '4';
     const snifferCount = count && count.trim() ? count.trim() : '100';
     
-    // Validate count
+    // Validate count - if invalid, use default
+    let validCount = snifferCount;
     const countNum = parseInt(snifferCount, 10);
     if (isNaN(countNum) || countNum < 0 || countNum > 9999) {
-        // If invalid, use default
-        const validCount = '100';
+        validCount = '100';
     }
     
     // Build filter string combining all provided parameters
@@ -133,7 +133,7 @@ function generateSnifferCommands(srcip, daddr, proto, dstport, interface, verbos
     
     commands.push({
         label: label,
-        command: `diag sniffer packet ${snifferInterface} "${filterString}" ${snifferVerbosity} ${snifferCount}`
+        command: `diag sniffer packet ${snifferInterface} "${filterString}" ${snifferVerbosity} ${validCount}`
     });
     
     return commands;
