@@ -785,81 +785,104 @@ function renderCommands(sections) {
 }
 
 
-// Form submission handler
-document.getElementById('configForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const srcip = document.getElementById('srcip').value.trim();
-    const daddr = document.getElementById('daddr').value.trim();
-    const proto = document.getElementById('proto').value;
-    const dstport = document.getElementById('dstport').value;
-    const topic = document.getElementById('troubleshootTopic').value;
-    const snifferInterface = document.getElementById('snifferInterface').value.trim();
-    const snifferVerbosity = document.getElementById('snifferVerbosity').value;
-    const snifferCount = document.getElementById('snifferCount').value.trim();
-    
-    // Validation - only validate if fields are provided
-    if (srcip && !validateIP(srcip)) {
-        alert('Please enter a valid source IP address or leave it empty');
+// Wait for DOM to be ready before attaching event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handler
+    const configForm = document.getElementById('configForm');
+    if (!configForm) {
+        console.error('configForm not found!');
         return;
     }
     
-    if (daddr && !validateIP(daddr)) {
-        alert('Please enter a valid destination IP address or leave it empty');
-        return;
-    }
-    
-    if (proto && !validateProtocol(proto)) {
-        alert('Please select a valid protocol (1, 6, or 17) or leave it unselected');
-        return;
-    }
-    
-    if (dstport && !validatePort(dstport)) {
-        alert('Please enter a valid destination port (22-65535) or leave it empty');
-        return;
-    }
-    
-    // Validate sniffer count if provided
-    if (snifferCount) {
-        const countNum = parseInt(snifferCount, 10);
-        if (isNaN(countNum) || countNum < 1 || countNum > 9999) {
-            alert('Please enter a valid packet count (1-9999) or leave it empty for default (100)');
+    configForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const srcip = document.getElementById('srcip').value.trim();
+        const daddr = document.getElementById('daddr').value.trim();
+        const proto = document.getElementById('proto').value;
+        const dstport = document.getElementById('dstport').value;
+        const topic = document.getElementById('troubleshootTopic').value;
+        const snifferInterface = document.getElementById('snifferInterface').value.trim();
+        const snifferVerbosity = document.getElementById('snifferVerbosity').value;
+        const snifferCount = document.getElementById('snifferCount').value.trim();
+        
+        // Validation - only validate if fields are provided
+        if (srcip && !validateIP(srcip)) {
+            alert('Please enter a valid source IP address or leave it empty');
             return;
         }
+        
+        if (daddr && !validateIP(daddr)) {
+            alert('Please enter a valid destination IP address or leave it empty');
+            return;
+        }
+        
+        if (proto && !validateProtocol(proto)) {
+            alert('Please select a valid protocol (1, 6, or 17) or leave it unselected');
+            return;
+        }
+        
+        if (dstport && !validatePort(dstport)) {
+            alert('Please enter a valid destination port (22-65535) or leave it empty');
+            return;
+        }
+        
+        // Validate sniffer count if provided
+        if (snifferCount) {
+            const countNum = parseInt(snifferCount, 10);
+            if (isNaN(countNum) || countNum < 1 || countNum > 9999) {
+                alert('Please enter a valid packet count (1-9999) or leave it empty for default (100)');
+                return;
+            }
+        }
+        
+        if (!topic) {
+            alert('Please select a troubleshooting topic');
+            return;
+        }
+        
+        // Generate and render commands
+        try {
+            const sections = generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount);
+            renderCommands(sections);
+        } catch (error) {
+            console.error('Error generating commands:', error);
+            alert('An error occurred while generating commands. Please check the console for details.');
+        }
+    });
+    
+    // Real-time validation feedback - only validate if fields have values
+    const srcipInput = document.getElementById('srcip');
+    if (srcipInput) {
+        srcipInput.addEventListener('blur', function() {
+            if (this.value.trim() && !validateIP(this.value.trim())) {
+                this.setCustomValidity('Please enter a valid IP address (e.g., 192.168.1.100) or leave empty');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
     }
     
-    if (!topic) {
-        alert('Please select a troubleshooting topic');
-        return;
+    const daddrInput = document.getElementById('daddr');
+    if (daddrInput) {
+        daddrInput.addEventListener('blur', function() {
+            if (this.value.trim() && !validateIP(this.value.trim())) {
+                this.setCustomValidity('Please enter a valid IP address (e.g., 10.0.0.1) or leave empty');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
     }
     
-    // Generate and render commands
-    const sections = generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount);
-    renderCommands(sections);
-});
-
-// Real-time validation feedback - only validate if fields have values
-document.getElementById('srcip').addEventListener('blur', function() {
-    if (this.value.trim() && !validateIP(this.value.trim())) {
-        this.setCustomValidity('Please enter a valid IP address (e.g., 192.168.1.100) or leave empty');
-    } else {
-        this.setCustomValidity('');
-    }
-});
-
-document.getElementById('daddr').addEventListener('blur', function() {
-    if (this.value.trim() && !validateIP(this.value.trim())) {
-        this.setCustomValidity('Please enter a valid IP address (e.g., 10.0.0.1) or leave empty');
-    } else {
-        this.setCustomValidity('');
-    }
-});
-
-document.getElementById('dstport').addEventListener('blur', function() {
-    if (this.value.trim() && !validatePort(this.value.trim())) {
-        this.setCustomValidity('Please enter a port between 22 and 65535 or leave empty');
-    } else {
-        this.setCustomValidity('');
+    const dstportInput = document.getElementById('dstport');
+    if (dstportInput) {
+        dstportInput.addEventListener('blur', function() {
+            if (this.value.trim() && !validatePort(this.value.trim())) {
+                this.setCustomValidity('Please enter a port between 22 and 65535 or leave empty');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
     }
 });
 
