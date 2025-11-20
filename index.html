@@ -50,6 +50,38 @@
                         <small>TCP/UDP port (22-65535, e.g., 80, 443, 22). Leave empty if unknown or not required.</small>
                     </div>
 
+                    <div class="sniffer-options-section">
+                        <h3>Sniffer Packet Options</h3>
+                        
+                        <div class="form-group">
+                            <label for="snifferInterface">Interface <span class="optional">(optional)</span></label>
+                            <input type="text" id="snifferInterface" name="snifferInterface" placeholder="any (default if left blank)" 
+                                   pattern="^[a-zA-Z0-9_-]+$">
+                            <small>Network interface name (e.g., port1, port2, wan1). Leave empty for "any" (all interfaces).</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="snifferVerbosity">Verbosity <span class="optional">(optional)</span></label>
+                            <select id="snifferVerbosity" name="snifferVerbosity">
+                                <option value="">4 - Default (header with interface name)</option>
+                                <option value="1">1 - Print header of packets</option>
+                                <option value="2">2 - Print header and data from IP of packets</option>
+                                <option value="3">3 - Print header and data from ethernet of packets</option>
+                                <option value="4">4 - Print header of packets with interface name (default)</option>
+                                <option value="5">5 - Print header and data from IP with interface name</option>
+                                <option value="6">6 - Print header and data from ethernet with interface name</option>
+                            </select>
+                            <small>Verbosity level (1-6). Default is 4 if left unselected.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="snifferCount">Packet Count <span class="optional">(optional)</span></label>
+                            <input type="number" id="snifferCount" name="snifferCount" placeholder="100 (default if left blank)" 
+                                   min="1" max="9999">
+                            <small>Number of packets to capture (1-9999). Use 0 for unlimited. Default is 100 if left empty.</small>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="troubleshootTopic">Troubleshooting Topic</label>
                         <select id="troubleshootTopic" name="troubleshootTopic" required>
@@ -66,37 +98,6 @@
                         <small>Select what you want to troubleshoot</small>
                     </div>
 
-                    <div class="form-group checkbox-group">
-                        <label>
-                            <input type="checkbox" id="enableChatGPT" name="enableChatGPT">
-                            Enable ChatGPT suggestions (requires API key)
-                        </label>
-                    </div>
-
-                    <div class="api-key-section">
-                        <h3>ChatGPT API Key Settings</h3>
-                        
-                        <div class="form-group">
-                            <label for="apiKey">OpenAI API Key</label>
-                            <input type="password" id="apiKey" name="apiKey" placeholder="sk-..." autocomplete="off">
-                            <small>Your API key is encrypted and stored locally in your browser only</small>
-                        </div>
-
-                        <div class="form-group" id="passwordGroup" style="display: none;">
-                            <label for="encryptionPassword">Encryption Password</label>
-                            <input type="password" id="encryptionPassword" name="encryptionPassword" placeholder="Enter password to encrypt/decrypt API key" autocomplete="off">
-                            <small>This password encrypts your API key. You'll need it to decrypt later. It's never stored.</small>
-                        </div>
-
-                        <div class="api-key-buttons">
-                            <button type="button" class="btn-secondary" id="saveApiKeyBtn">Save API Key (Encrypted)</button>
-                            <button type="button" class="btn-secondary" id="loadApiKeyBtn">Load Saved API Key</button>
-                            <button type="button" class="btn-secondary" id="clearApiKeyBtn">Clear Saved Key</button>
-                        </div>
-
-                        <div id="apiKeyStatus" class="api-key-status"></div>
-                    </div>
-
                     <button type="submit" class="btn-primary" id="generateBtn">
                         Generate Commands
                     </button>
@@ -108,14 +109,8 @@
                 <div id="commandSections"></div>
             </div>
         </div>
-
-        <div id="chatgptPanel" class="chatgpt-panel" style="display: none;">
-            <h3>ChatGPT Suggestions</h3>
-            <div id="chatgptOutput"></div>
-        </div>
     </div>
 
-    <script src="crypto-utils.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

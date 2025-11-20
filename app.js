@@ -61,9 +61,21 @@ diag debug enable
     return commands;
 }
 
-function generateSnifferCommands(srcip, daddr, proto, dstport) {
+function generateSnifferCommands(srcip, daddr, proto, dstport, interface, verbosity, count) {
     // Return array of command objects for individual copy buttons
     const commands = [];
+    
+    // Set defaults
+    const snifferInterface = interface && interface.trim() ? interface.trim() : 'any';
+    const snifferVerbosity = verbosity && verbosity.trim() ? verbosity.trim() : '4';
+    const snifferCount = count && count.trim() ? count.trim() : '100';
+    
+    // Validate count
+    const countNum = parseInt(snifferCount, 10);
+    if (isNaN(countNum) || countNum < 0 || countNum > 9999) {
+        // If invalid, use default
+        const validCount = '100';
+    }
     
     // Build filter string combining all provided parameters
     const filterParts = [];
@@ -84,34 +96,45 @@ function generateSnifferCommands(srcip, daddr, proto, dstport) {
         filterParts.push(`proto ${proto}`);
     }
     
-    // Generate command(s) based on what filters are available
-    if (filterParts.length > 0) {
-        // Combine all filters with "and" operator
-        const filterString = filterParts.join(' and ');
-        
-        // Build descriptive label
-        let labelParts = [];
-        if (srcip) labelParts.push(`source ${srcip}`);
-        if (daddr) labelParts.push(`destination ${daddr}`);
-        if (proto) {
-            const protoName = getProtocolName(proto);
-            labelParts.push(`protocol ${protoName} (${proto})`);
-        }
-        if (dstport) labelParts.push(`port ${dstport}`);
-        
-        const label = `Capture traffic${labelParts.length > 0 ? ' with ' + labelParts.join(', ') : ''}`;
-        
-        commands.push({
-            label: label,
-            command: `diag sniffer packet any "${filterString}" 4 0`
-        });
-    } else {
-        // No filters provided - basic capture
-        commands.push({
-            label: 'Basic packet capture (no filters)',
-            command: `diag sniffer packet any "" 4 0`
-        });
+    // Build filter string (empty string if no filters)
+    const filterString = filterParts.length > 0 ? filterParts.join(' and ') : '';
+    
+    // Build descriptive label
+    let labelParts = [];
+    if (srcip) labelParts.push(`source ${srcip}`);
+    if (daddr) labelParts.push(`destination ${daddr}`);
+    if (proto) {
+        const protoName = getProtocolName(proto);
+        labelParts.push(`protocol ${protoName} (${proto})`);
     }
+    if (dstport) labelParts.push(`port ${dstport}`);
+    
+    let label = 'Packet capture';
+    if (labelParts.length > 0) {
+        label += ` with ${labelParts.join(', ')}`;
+    } else {
+        label += ' (no filters)';
+    }
+    
+    // Add interface, verbosity, and count info to label
+    const labelDetails = [];
+    if (snifferInterface !== 'any') {
+        labelDetails.push(`interface: ${snifferInterface}`);
+    }
+    if (snifferVerbosity !== '4') {
+        labelDetails.push(`verbosity: ${snifferVerbosity}`);
+    }
+    if (snifferCount !== '100') {
+        labelDetails.push(`count: ${snifferCount}`);
+    }
+    if (labelDetails.length > 0) {
+        label += ` (${labelDetails.join(', ')})`;
+    }
+    
+    commands.push({
+        label: label,
+        command: `diag sniffer packet ${snifferInterface} "${filterString}" ${snifferVerbosity} ${snifferCount}`
+    });
     
     return commands;
 }
@@ -479,7 +502,7 @@ diag debug cli 0`;
 }
 
 // Generate commands based on topic
-function generateCommands(topic, srcip, daddr, proto, dstport) {
+function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount) {
     const sections = [];
     let sectionNum = 1;
     
@@ -500,7 +523,7 @@ function generateCommands(topic, srcip, daddr, proto, dstport) {
             });
             sections.push({
                 title: `${sectionNum++}. Packet Capture (Sniffer)`,
-                commands: generateSnifferCommands(srcip, daddr, proto, dstport),
+                commands: generateSnifferCommands(srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount),
                 type: 'sniffer' // Array of command objects
             });
             break;
@@ -682,7 +705,7 @@ function renderCommands(sections) {
             infoDiv.style.borderBottom = '1px solid var(--border-color)';
             infoDiv.style.fontSize = '0.9em';
             infoDiv.style.color = '#666';
-            infoDiv.innerHTML = '<strong>Note:</strong> Run one command at a time. Verbosity: 1=basic, 2=with MAC, 3=more header info, 4=include payload hex';
+            infoDiv.innerHTML = '<strong>Note:</strong> Run one command at a time. Verbosity levels: 1=header only, 2=header+IP data, 3=header+ethernet data, 4=header+interface (default), 5=header+IP data+interface, 6=header+ethernet data+interface';
             sectionDiv.appendChild(infoDiv);
             
             // Render each sniffer command with its own copy button
@@ -761,266 +784,6 @@ function renderCommands(sections) {
     document.getElementById('outputPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Show/hide status message
-function showApiKeyStatus(message, type) {
-    const statusDiv = document.getElementById('apiKeyStatus');
-    statusDiv.textContent = message;
-    statusDiv.className = `api-key-status ${type}`;
-    statusDiv.style.display = 'block';
-    
-    setTimeout(() => {
-        statusDiv.style.display = 'none';
-    }, 5000);
-}
-
-// Save API key with encryption
-async function saveApiKey() {
-    const apiKey = document.getElementById('apiKey').value.trim();
-    const password = document.getElementById('encryptionPassword').value;
-    
-    if (!apiKey) {
-        showApiKeyStatus('Please enter an API key', 'error');
-        return;
-    }
-    
-    if (!password) {
-        showApiKeyStatus('Please enter an encryption password', 'error');
-        document.getElementById('passwordGroup').style.display = 'block';
-        return;
-    }
-    
-    if (password.length < 8) {
-        showApiKeyStatus('Password must be at least 8 characters long', 'error');
-        return;
-    }
-    
-    try {
-        await encryptApiKey(apiKey, password);
-        showApiKeyStatus('API key encrypted and saved successfully!', 'success');
-        document.getElementById('apiKey').value = ''; // Clear the input
-        document.getElementById('encryptionPassword').value = ''; // Clear password
-        document.getElementById('passwordGroup').style.display = 'none';
-    } catch (error) {
-        showApiKeyStatus('Error saving API key: ' + error.message, 'error');
-    }
-}
-
-// Load and decrypt API key
-async function loadApiKey() {
-    if (!hasEncryptedApiKey()) {
-        showApiKeyStatus('No saved API key found', 'error');
-        return;
-    }
-    
-    const password = document.getElementById('encryptionPassword').value;
-    
-    if (!password) {
-        showApiKeyStatus('Please enter your encryption password to decrypt the API key', 'info');
-        document.getElementById('passwordGroup').style.display = 'block';
-        document.getElementById('encryptionPassword').focus();
-        return;
-    }
-    
-    try {
-        const decryptedKey = await decryptApiKey(password);
-        document.getElementById('apiKey').value = decryptedKey;
-        showApiKeyStatus('API key loaded successfully!', 'success');
-        document.getElementById('encryptionPassword').value = ''; // Clear password after use
-        document.getElementById('passwordGroup').style.display = 'none';
-    } catch (error) {
-        showApiKeyStatus('Error loading API key: ' + error.message, 'error');
-        document.getElementById('apiKey').value = '';
-    }
-}
-
-// Clear saved API key
-function clearApiKey() {
-    if (!hasEncryptedApiKey()) {
-        showApiKeyStatus('No saved API key to clear', 'info');
-        return;
-    }
-    
-    if (confirm('Are you sure you want to clear the saved encrypted API key? You will need to enter it again.')) {
-        clearEncryptedApiKey();
-        document.getElementById('apiKey').value = '';
-        document.getElementById('encryptionPassword').value = '';
-        showApiKeyStatus('Saved API key cleared', 'success');
-    }
-}
-
-// Get current API key (from input or decrypt if needed)
-async function getCurrentApiKey() {
-    const apiKeyInput = document.getElementById('apiKey').value.trim();
-    if (apiKeyInput) {
-        return apiKeyInput;
-    }
-    
-    // Try to load from storage if available
-    if (hasEncryptedApiKey()) {
-        const password = prompt('Enter your encryption password to load the API key:');
-        if (password) {
-            try {
-                return await decryptApiKey(password);
-            } catch (error) {
-                console.error('Failed to decrypt API key:', error);
-                return null;
-            }
-        }
-    }
-    
-    return null;
-}
-
-// ChatGPT integration (optional)
-async function getChatGPTSuggestions(topic, srcip, daddr, proto, dstport) {
-    const panel = document.getElementById('chatgptPanel');
-    const output = document.getElementById('chatgptOutput');
-    
-    // Get API key
-    const apiKey = await getCurrentApiKey();
-    
-    if (!apiKey) {
-        output.innerHTML = `
-            <p><strong>Error:</strong> No API key provided. Please enter your OpenAI API key in the settings above.</p>
-            <p>You can save it encrypted for future use.</p>
-        `;
-        panel.style.display = 'block';
-        return;
-    }
-    
-    // Build prompt
-    let prompt = `I'm troubleshooting a FortiGate firewall issue related to: ${topic}.\n\n`;
-    
-    if (srcip || daddr || proto || dstport) {
-        prompt += 'Parameters:\n';
-        if (srcip) prompt += `- Source IP: ${srcip}\n`;
-        if (daddr) prompt += `- Destination IP: ${daddr}\n`;
-        if (proto) prompt += `- Protocol: ${proto} (${getProtocolName(proto)})\n`;
-        if (dstport) prompt += `- Destination Port: ${dstport}\n`;
-    }
-    
-    prompt += '\nWhat debug commands and troubleshooting steps would you recommend?';
-    
-    // Call OpenAI API
-    try {
-        output.innerHTML = '<p>Loading suggestions from ChatGPT...</p>';
-        panel.style.display = 'block';
-        
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a network security expert specializing in FortiGate firewalls. Provide concise, actionable troubleshooting advice and debug command suggestions.'
-                    },
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                max_tokens: 500,
-                temperature: 0.7
-            })
-        });
-        
-        if (!response.ok) {
-            let errorMessage = 'API request failed';
-            let errorDetails = '';
-            let errorType = '';
-            
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.error?.message || errorMessage;
-                errorType = errorData.error?.type || '';
-                errorDetails = errorData.error?.code || '';
-                
-                // Provide helpful context for common errors
-                if (errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('billing')) {
-                    errorDetails = `
-                        <p><strong>This is a billing/quota issue with your OpenAI account:</strong></p>
-                        <ul>
-                            <li>You may have exceeded your usage limits</li>
-                            <li>Your account may need payment method added</li>
-                            <li>Check your usage at: <a href="https://platform.openai.com/usage" target="_blank">https://platform.openai.com/usage</a></li>
-                            <li>Check billing at: <a href="https://platform.openai.com/account/billing" target="_blank">https://platform.openai.com/account/billing</a></li>
-                        </ul>
-                    `;
-                } else if (errorMessage.toLowerCase().includes('invalid') && errorMessage.toLowerCase().includes('key')) {
-                    errorDetails = `
-                        <p><strong>API Key Issue:</strong></p>
-                        <ul>
-                            <li>Verify your API key is correct</li>
-                            <li>Get a new key at: <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></li>
-                            <li>Make sure the key has proper permissions</li>
-                        </ul>
-                    `;
-                } else if (response.status === 429) {
-                    errorDetails = `
-                        <p><strong>Rate Limit Exceeded:</strong></p>
-                        <ul>
-                            <li>You're making too many requests too quickly</li>
-                            <li>Please wait a moment and try again</li>
-                            <li>Check your rate limits at: <a href="https://platform.openai.com/account/limits" target="_blank">https://platform.openai.com/account/limits</a></li>
-                        </ul>
-                    `;
-                } else if (response.status === 401) {
-                    errorDetails = `
-                        <p><strong>Authentication Failed:</strong></p>
-                        <ul>
-                            <li>Your API key may be invalid or expired</li>
-                            <li>Please verify and update your API key</li>
-                        </ul>
-                    `;
-                }
-            } catch (parseError) {
-                // If we can't parse the error, use the status text
-                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-            }
-            
-            output.innerHTML = `
-                <p><strong>Error calling ChatGPT API:</strong></p>
-                <p style="color: #d32f2f; font-weight: bold;">${errorMessage}</p>
-                ${errorDetails}
-                ${errorType ? `<p><small>Error Type: ${errorType}</small></p>` : ''}
-                <p><small>For more information, visit: <a href="https://platform.openai.com/docs/guides/error-codes" target="_blank">OpenAI Error Codes Documentation</a></small></p>
-            `;
-            return;
-        }
-        
-        const data = await response.json();
-        const suggestion = data.choices[0]?.message?.content || 'No response received';
-        
-        output.innerHTML = `
-            <div style="white-space: pre-wrap; line-height: 1.6;">${suggestion}</div>
-        `;
-    } catch (error) {
-        // Network or other errors
-        let errorDetails = '';
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            errorDetails = `
-                <p><strong>Network Error:</strong></p>
-                <ul>
-                    <li>Check your internet connection</li>
-                    <li>Verify you can access api.openai.com</li>
-                    <li>Check if a firewall or proxy is blocking the request</li>
-                </ul>
-            `;
-        }
-        
-        output.innerHTML = `
-            <p><strong>Error calling ChatGPT API:</strong></p>
-            <p style="color: #d32f2f; font-weight: bold;">${error.message}</p>
-            ${errorDetails}
-            <p>Please check your API key and try again.</p>
-        `;
-    }
-}
 
 // Form submission handler
 document.getElementById('configForm').addEventListener('submit', (e) => {
@@ -1031,7 +794,9 @@ document.getElementById('configForm').addEventListener('submit', (e) => {
     const proto = document.getElementById('proto').value;
     const dstport = document.getElementById('dstport').value;
     const topic = document.getElementById('troubleshootTopic').value;
-    const enableChatGPT = document.getElementById('enableChatGPT').checked;
+    const snifferInterface = document.getElementById('snifferInterface').value.trim();
+    const snifferVerbosity = document.getElementById('snifferVerbosity').value;
+    const snifferCount = document.getElementById('snifferCount').value.trim();
     
     // Validation - only validate if fields are provided
     if (srcip && !validateIP(srcip)) {
@@ -1054,21 +819,23 @@ document.getElementById('configForm').addEventListener('submit', (e) => {
         return;
     }
     
+    // Validate sniffer count if provided
+    if (snifferCount) {
+        const countNum = parseInt(snifferCount, 10);
+        if (isNaN(countNum) || countNum < 1 || countNum > 9999) {
+            alert('Please enter a valid packet count (1-9999) or leave it empty for default (100)');
+            return;
+        }
+    }
+    
     if (!topic) {
         alert('Please select a troubleshooting topic');
         return;
     }
     
     // Generate and render commands
-    const sections = generateCommands(topic, srcip, daddr, proto, dstport);
+    const sections = generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount);
     renderCommands(sections);
-    
-    // ChatGPT suggestions if enabled
-    if (enableChatGPT) {
-        getChatGPTSuggestions(topic, srcip, daddr, proto, dstport);
-    } else {
-        document.getElementById('chatgptPanel').style.display = 'none';
-    }
 });
 
 // Real-time validation feedback - only validate if fields have values
@@ -1096,52 +863,4 @@ document.getElementById('dstport').addEventListener('blur', function() {
     }
 });
 
-// API Key Management Event Listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if encrypted key exists on load
-    if (hasEncryptedApiKey()) {
-        const statusDiv = document.getElementById('apiKeyStatus');
-        statusDiv.textContent = 'A saved encrypted API key is available. Click "Load Saved API Key" to decrypt it.';
-        statusDiv.className = 'api-key-status info';
-        statusDiv.style.display = 'block';
-    }
-    
-    // Save API key button
-    const saveBtn = document.getElementById('saveApiKeyBtn');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', saveApiKey);
-    }
-    
-    // Load API key button
-    const loadBtn = document.getElementById('loadApiKeyBtn');
-    if (loadBtn) {
-        loadBtn.addEventListener('click', loadApiKey);
-    }
-    
-    // Clear API key button
-    const clearBtn = document.getElementById('clearApiKeyBtn');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearApiKey);
-    }
-    
-    // Show password field when needed
-    const enableChatGPT = document.getElementById('enableChatGPT');
-    if (enableChatGPT) {
-        enableChatGPT.addEventListener('change', function() {
-            if (this.checked && hasEncryptedApiKey()) {
-                document.getElementById('passwordGroup').style.display = 'block';
-            }
-        });
-    }
-    
-    // Show password field when API key input is focused and encrypted key exists
-    const apiKeyInput = document.getElementById('apiKey');
-    if (apiKeyInput) {
-        apiKeyInput.addEventListener('focus', function() {
-            if (hasEncryptedApiKey() && !this.value) {
-                document.getElementById('passwordGroup').style.display = 'block';
-            }
-        });
-    }
-});
 
