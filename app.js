@@ -914,8 +914,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = themeToggle?.querySelector('.theme-icon');
     
-    // Load saved theme or default to light
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    // Load saved theme or default to dark
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme, themeIcon);
     
@@ -932,6 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateThemeIcon(theme, iconElement) {
     if (iconElement) {
+        // Dark theme shows sun (to switch to light), light theme shows moon (to switch to dark)
         iconElement.textContent = theme === 'dark' ? '☀️' : '🌙';
     }
 }
