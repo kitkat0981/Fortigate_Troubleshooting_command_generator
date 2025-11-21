@@ -895,53 +895,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     console.log('All event listeners attached successfully');
-});
-
-// Theme toggle functionality
-function initTheme() {
-    const themeToggle = document.getElementById('themeToggle');
-    const currentTheme = localStorage.getItem('theme') || 'light';
     
-    // Set initial theme
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    themeToggle.checked = currentTheme === 'dark';
+    // Initialize collapsible section (sniffer options)
+    const snifferToggle = document.getElementById('snifferToggle');
+    const snifferContent = document.getElementById('snifferContent');
+    const snifferSection = snifferToggle?.closest('.collapsible-section');
     
-    // Theme toggle handler
-    themeToggle.addEventListener('change', function() {
-        const newTheme = this.checked ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-    });
-}
-
-// Collapsible functionality
-function toggleCollapsible(header) {
-    const content = header.nextElementSibling;
-    const isActive = header.classList.contains('active');
-    
-    if (isActive) {
-        header.classList.remove('active');
-        content.style.display = 'none';
-    } else {
-        header.classList.add('active');
-        content.style.display = 'block';
+    if (snifferToggle && snifferSection) {
+        // Start collapsed
+        snifferSection.classList.add('collapsed');
+        
+        snifferToggle.addEventListener('click', function() {
+            snifferSection.classList.toggle('collapsed');
+        });
     }
-}
-
-// Make function globally accessible
-window.toggleCollapsible = toggleCollapsible;
-
-// Initialize theme and collapsible on page load
-document.addEventListener('DOMContentLoaded', function() {
-    initTheme();
     
-    // Set up collapsible for sniffer options
-    const snifferHeader = document.getElementById('snifferHeader');
-    if (snifferHeader) {
-        snifferHeader.addEventListener('click', function() {
-            toggleCollapsible(this);
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = themeToggle?.querySelector('.theme-icon');
+    
+    // Load saved theme or default to light
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme, themeIcon);
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme, themeIcon);
         });
     }
 });
+
+function updateThemeIcon(theme, iconElement) {
+    if (iconElement) {
+        iconElement.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+}
 
 
