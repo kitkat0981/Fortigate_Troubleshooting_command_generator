@@ -662,24 +662,53 @@ function filterComments(text) {
         .join('\n');
 }
 
-// Copy to clipboard function
+// Copy to clipboard function with fallback
 async function copyToClipboard(text, button) {
+    // Filter out comment lines before copying
+    const filteredText = filterComments(text);
+    
+    // Try modern Clipboard API first, fallback to execCommand if it fails
     try {
-        // Filter out comment lines before copying
-        const filteredText = filterComments(text);
-        await navigator.clipboard.writeText(filteredText);
-        const originalText = button.textContent;
-        button.textContent = '✓ Copied!';
-        button.classList.add('copied');
-        
-        setTimeout(() => {
-            button.textContent = originalText;
-            button.classList.remove('copied');
-        }, 2000);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(filteredText);
+        } else {
+            throw new Error('Clipboard API not available');
+        }
     } catch (err) {
-        console.error('Failed to copy:', err);
-        alert('Failed to copy to clipboard. Please select and copy manually.');
+        // Fallback to execCommand for non-secure contexts or when Clipboard API fails
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = filteredText;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (!successful) {
+                throw new Error('execCommand copy failed');
+            }
+        } catch (fallbackErr) {
+            console.error('Failed to copy:', fallbackErr);
+            alert('Failed to copy to clipboard. Please select and copy manually.');
+            return;
+        }
     }
+    
+    // Success - update button UI
+    const originalText = button.textContent;
+    button.textContent = '✓ Copied!';
+    button.classList.add('copied');
+    
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('copied');
+    }, 2000);
 }
 
 // Render command sections
