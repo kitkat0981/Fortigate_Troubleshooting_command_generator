@@ -131,7 +131,7 @@ Fortigate_Troubleshooting_command_generator/
 ├── nginx.conf              # Nginx web server configuration
 ├── .dockerignore           # Files to exclude from Docker build
 ├── .gitignore              # Git ignore rules
-├── LICENSE                 # MIT License
+├── LICENSE                 # Custom License (Non-Commercial)
 └── README.md               # This file
 ```
 
@@ -260,7 +260,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is open source and available under the MIT License.
+This project is open source and available under a custom license. See [LICENSE](LICENSE) for details.
+
+**Important**: This software may NOT be sold or used for commercial purposes without explicit written permission from the copyright holder. All rights reserved.
 
 ## Disclaimer
 
