@@ -9,8 +9,21 @@
 <body>
     <div class="container">
         <header>
-            <h1>🔧 FortiGate Debug Command Generator</h1>
-            <p class="subtitle">Generate troubleshooting commands for FortiGate firewalls</p>
+            <div class="header-content">
+                <div>
+                    <h1>🔧 FortiGate Debug Command Generator</h1>
+                    <p class="subtitle">Generate troubleshooting commands for FortiGate firewalls</p>
+                </div>
+                <div class="theme-toggle-container">
+                    <label class="theme-toggle">
+                        <input type="checkbox" id="themeToggle">
+                        <span class="slider">
+                            <span class="theme-icon">🌙</span>
+                            <span class="theme-icon">☀️</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
         </header>
 
         <div class="main-content">
@@ -18,6 +31,22 @@
                 <h2>Configuration</h2>
                 
                 <form id="configForm">
+                    <div class="form-group">
+                        <label for="troubleshootTopic">Troubleshooting Topic <span class="required">*</span></label>
+                        <select id="troubleshootTopic" name="troubleshootTopic" required>
+                            <option value="">Select Topic</option>
+                            <option value="traffic">Traffic / Policy / Session (Flow Debug)</option>
+                            <option value="ipsec">IPsec VPN</option>
+                            <option value="sslvpn">SSL VPN</option>
+                            <option value="routing">Routing and Connectivity (OSPF/BGP)</option>
+                            <option value="auth">User Authentication / FSSO / SSO</option>
+                            <option value="ha">High Availability (HA)</option>
+                            <option value="utm">UTM (IPS, Application Control, Web Filter)</option>
+                            <option value="system">System / Performance</option>
+                        </select>
+                        <small>Select what you want to troubleshoot</small>
+                    </div>
+
                     <div class="form-group">
                         <label for="srcip">Source IP Address (saddr) <span class="optional">(optional)</span></label>
                         <input type="text" id="srcip" name="srcip" placeholder="192.168.1.100 (leave empty if unknown)" 
@@ -50,52 +79,40 @@
                         <small>TCP/UDP port (22-65535, e.g., 80, 443, 22). Leave empty if unknown or not required.</small>
                     </div>
 
-                    <div class="sniffer-options-section">
-                        <h3>Sniffer Packet Options</h3>
-                        
-                        <div class="form-group">
-                            <label for="snifferInterface">Interface <span class="optional">(optional)</span></label>
-                            <input type="text" id="snifferInterface" name="snifferInterface" placeholder="any (default if left blank)" 
-                                   pattern="^[a-zA-Z0-9_-]+$">
-                            <small>Network interface name (e.g., port1, port2, wan1). Leave empty for "any" (all interfaces).</small>
+                    <div class="sniffer-options-section collapsible">
+                        <div class="collapsible-header" id="snifferHeader">
+                            <h3>Sniffer Packet Options</h3>
+                            <span class="collapse-icon">▼</span>
                         </div>
+                        <div class="collapsible-content" style="display: none;">
+                            <div class="form-group">
+                                <label for="snifferInterface">Interface <span class="optional">(optional)</span></label>
+                                <input type="text" id="snifferInterface" name="snifferInterface" placeholder="any (default if left blank)" 
+                                       pattern="^[a-zA-Z0-9_-]+$">
+                                <small>Network interface name (e.g., port1, port2, wan1). Leave empty for "any" (all interfaces).</small>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="snifferVerbosity">Verbosity <span class="optional">(optional)</span></label>
-                            <select id="snifferVerbosity" name="snifferVerbosity">
-                                <option value="">4 - Default (header with interface name)</option>
-                                <option value="1">1 - Print header of packets</option>
-                                <option value="2">2 - Print header and data from IP of packets</option>
-                                <option value="3">3 - Print header and data from ethernet of packets</option>
-                                <option value="4">4 - Print header of packets with interface name (default)</option>
-                                <option value="5">5 - Print header and data from IP with interface name</option>
-                                <option value="6">6 - Print header and data from ethernet with interface name</option>
-                            </select>
-                            <small>Verbosity level (1-6). Default is 4 if left unselected.</small>
+                            <div class="form-group">
+                                <label for="snifferVerbosity">Verbosity <span class="optional">(optional)</span></label>
+                                <select id="snifferVerbosity" name="snifferVerbosity">
+                                    <option value="">4 - Default (header with interface name)</option>
+                                    <option value="1">1 - Print header of packets</option>
+                                    <option value="2">2 - Print header and data from IP of packets</option>
+                                    <option value="3">3 - Print header and data from ethernet of packets</option>
+                                    <option value="4">4 - Print header of packets with interface name (default)</option>
+                                    <option value="5">5 - Print header and data from IP with interface name</option>
+                                    <option value="6">6 - Print header and data from ethernet with interface name</option>
+                                </select>
+                                <small>Verbosity level (1-6). Default is 4 if left unselected.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="snifferCount">Packet Count <span class="optional">(optional)</span></label>
+                                <input type="number" id="snifferCount" name="snifferCount" placeholder="100 (default if left blank)" 
+                                       min="1" max="9999">
+                                <small>Number of packets to capture (1-9999). Use 0 for unlimited. Default is 100 if left empty.</small>
+                            </div>
                         </div>
-
-                        <div class="form-group">
-                            <label for="snifferCount">Packet Count <span class="optional">(optional)</span></label>
-                            <input type="number" id="snifferCount" name="snifferCount" placeholder="100 (default if left blank)" 
-                                   min="1" max="9999">
-                            <small>Number of packets to capture (1-9999). Use 0 for unlimited. Default is 100 if left empty.</small>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="troubleshootTopic">Troubleshooting Topic</label>
-                        <select id="troubleshootTopic" name="troubleshootTopic" required>
-                            <option value="">Select Topic</option>
-                            <option value="traffic">Traffic / Policy / Session (Flow Debug)</option>
-                            <option value="ipsec">IPsec VPN</option>
-                            <option value="sslvpn">SSL VPN</option>
-                            <option value="routing">Routing and Connectivity (OSPF/BGP)</option>
-                            <option value="auth">User Authentication / FSSO / SSO</option>
-                            <option value="ha">High Availability (HA)</option>
-                            <option value="utm">UTM (IPS, Application Control, Web Filter)</option>
-                            <option value="system">System / Performance</option>
-                        </select>
-                        <small>Select what you want to troubleshoot</small>
                     </div>
 
                     <button type="submit" class="btn-primary" id="generateBtn">
