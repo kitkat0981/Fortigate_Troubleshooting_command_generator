@@ -148,15 +148,15 @@ function generateIPsecCommands(srcip, daddr) {
 diag debug disable
 diag debug console timestamp enable
 
+# Note: Starting from v7.4.1, the command is 'diagnose vpn ike log filter'
 # IKE negotiation debug
 diagnose vpn ike log filter clear`;
     
     if (srcip) {
-        ikeCommands += `\ndiagnose vpn ike log filter src-addr4 ${srcip}`;
+        ikeCommands += `\ndiagnose vpn ike log filter loc-addr4 ${srcip}`;
     }
     if (daddr) {
-        ikeCommands += `\ndiagnose vpn ike log filter dst-addr4 ${daddr}`;
-        ikeCommands += `\n# Alternative (latest version): diagnose vpn ike log filter rem-addr4 ${daddr}`;
+        ikeCommands += `\ndiagnose vpn ike log filter rem-addr4 ${daddr}`;
     }
     
     ikeCommands += `

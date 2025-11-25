@@ -87,9 +87,9 @@ IKE negotiation:
   diag debug console timestamp enable
 
   diagnose vpn ike log filter clear
-  diagnose vpn ike log filter src-addr4 <srcip>     # local IP (FortiGate side)
-  diagnose vpn ike log filter dst-addr4 <dstip>     # remote gateway IP
-  # Alternative (latest version): diagnose vpn ike log filter rem-addr4 <dstip>
+  (Starting from v7.4.1, the syntax uses 'diagnose vpn ike log filter')
+  diagnose vpn ike log filter loc-addr4 <srcip>     # local gateway IP (FortiGate side)
+  diagnose vpn ike log filter rem-addr4 <dstip>     # remote gateway IP
   diagnose vpn ike log filter name <phase1-name>    # optional
 
   diagnose debug app ike -1
@@ -104,21 +104,19 @@ Stop debug:
 Available filter options:
   list             - Display the current filter
   clear            - Erase the current filter
-  name             - Phase1 name to filter by
-  src-addr4        - IPv4 source address range to filter by
-  msrc-addr4       - Multiple IPv4 source addresses to filter by
-  dst-addr4        - IPv4 destination address range to filter by
-  mdst-addr4       - Multiple IPv4 destination addresses to filter by
-  src-addr6        - IPv6 source address range to filter by
-  msrc-addr6       - Multiple IPv6 source addresses to filter by
-  dst-addr6        - IPv6 destination address range to filter by
-  mdst-addr6       - Multiple IPv6 destination addresses to filter by
-  src-port         - Source port range to filter by
-  dst-port         - Destination port range to filter by
   vd               - Index of virtual domain. -1 matches all
-  interface        - Interface that IKE connection is negotiated over
-  negate           - Negate the specified filter parameter
-  rem-addr4        - Remote gateway address (alternative to dst-addr4 in latest version)
+  name             - Phase1 name to filter by
+  ifindex          - Index of the interface that IKE connection is negotiated over
+  loc-addr4        - IPv4 local gateway address range to filter by
+  mloc-addr4       - Multiple IPv4 local gateway address to filter by
+  rem-addr4        - IPv4 remote gateway address range to filter by
+  mrem-addr4       - Multiple IPv4 remote gateway address to filter by
+  loc-addr6        - IPv6 local gateway address range to filter by
+  mloc-addr6       - Multiple IPv6 local gateway address to filter by
+  rem-addr6        - IPv6 remote gateway address range to filter by
+  mrem-addr6       - Multiple IPv6 remote gateway addresses to filter by
+  dst-port         - Destination port range to filter by
+  negate           - Negate existing setting of the specified filter parameter
 
 Quick status checks:
 
