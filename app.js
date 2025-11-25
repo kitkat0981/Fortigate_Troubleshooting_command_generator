@@ -146,25 +146,27 @@ function generateIPsecCommands(srcip, daddr) {
     // IKE negotiation debug subsection
     let ikeCommands = `diag debug reset
 diag debug disable
+diag debug console timestamp enable
 
 # IKE negotiation debug
-diag vpn ike log-filter clear`;
+diagnose vpn ike log filter clear`;
     
     if (srcip) {
-        ikeCommands += `\ndiag vpn ike log-filter src-addr4 ${srcip}`;
+        ikeCommands += `\ndiagnose vpn ike log filter src-addr4 ${srcip}`;
     }
     if (daddr) {
-        ikeCommands += `\ndiag vpn ike log-filter dst-addr4 ${daddr}`;
+        ikeCommands += `\ndiagnose vpn ike log filter dst-addr4 ${daddr}`;
+        ikeCommands += `\n# Alternative (latest version): diagnose vpn ike log filter rem-addr4 ${daddr}`;
     }
     
     ikeCommands += `
-diag debug app ike -1
-diag debug enable
+diagnose debug app ike -1
+diagnose debug enable
 
 # Stop debug:
-# diag debug disable
-# diag debug app ike 0
-# diag vpn ike log-filter clear`;
+# diagnose debug disable
+# diagnose debug app ike 0
+# diagnose vpn ike log filter clear`;
     
     subsections.push({
         title: 'IKE Negotiation Debug',
