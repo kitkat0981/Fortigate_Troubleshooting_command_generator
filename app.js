@@ -27,7 +27,8 @@ function getProtocolName(proto) {
 function generateGlobalDebug() {
     return `diag debug reset
 diag debug disable
-diag debug console timestamp enable`;
+diag debug console timestamp enable
+diag debug duration 0`;
 }
 
 function generateFlowDebug(srcip, daddr, proto, dstport) {
@@ -59,6 +60,54 @@ diag debug enable
 # diag debug flow filter clear`;
     
     return commands;
+}
+
+function generateSessionTableCommands(srcip, daddr, proto, dstport) {
+    let commands = `diagnose sys session filter clear`;
+    
+    if (srcip) {
+        commands += `\ndiagnose sys session filter src ${srcip}`;
+    }
+    if (daddr) {
+        commands += `\ndiagnose sys session filter dst ${daddr}`;
+    }
+    if (dstport) {
+        commands += `\ndiagnose sys session filter dport ${dstport}`;
+    }
+    if (proto) {
+        commands += `\ndiagnose sys session filter proto ${proto}`;
+    }
+    
+    commands += `
+diagnose sys session list
+diagnose firewall iprope list`;
+    
+    return commands;
+}
+
+function generateNetworkDiagnosticsCommands() {
+    return `execute ping-options repeat 5 size 1200
+get system arp
+diagnose ip arp list
+diagnose netlink brctl list
+get system interface
+get sys interface physical
+diagnose ip address list
+get sys interface transceiver`;
+}
+
+function generateFortiGuardLoggingCommands() {
+    return `diagnose debug rating
+diagnose debug application update -1
+diagnose debug enable
+execute update-now
+diagnose autoupdate status
+diagnose autoupdate versions
+diagnose log test
+execute log filter
+exec log display
+execute log delete
+execute log fortianalyzer testconnectivity`;
 }
 
 function generateSnifferCommands(srcip, daddr, proto, dstport, interface, verbosity, count) {
@@ -267,7 +316,7 @@ get router info routing-table all
 get router info routing-table database
 
 # ECMP / policy route issues
-get router info policy
+diagnose router policy list
 diag ip route list`;
     
     subsections.push({
@@ -276,16 +325,9 @@ diag ip route list`;
     });
     
     // OSPF debug subsection
-    const ospfCommands = `diag debug reset
-diag debug disable
-
-# OSPF debug
-diag debug app ospfd -1
-diag debug enable
-
-# Stop debug:
-# diag debug disable
-# diag debug app ospfd 0`;
+    const ospfCommands = `# OSPF debug (auto-disables after ~30 minutes)
+diagnose ip router ospf all enable
+diagnose ip router ospf level info`;
     
     subsections.push({
         title: 'OSPF Debug',
@@ -467,9 +509,16 @@ function generateSystemCommands() {
     
     // CPU / memory subsection
     const performanceCommands = `# CPU / memory
-diag sys top
+get system status
+execute time
 get system performance status
-get system performance top`;
+get system performance top
+diag sys top
+diag sys session stat
+diag sys session exp-stat
+diag sys vd list
+diag sys cmdb info
+diag sys mpstat 5`;
     
     subsections.push({
         title: 'System Performance',
@@ -493,6 +542,19 @@ diag debug enable
         commands: processCommands
     });
     
+    // Hardware health subsection
+    const hardwareCommands = `diagnose hardware sysinfo interrupts
+diagnose hardware sysinfo memory
+diagnose hardware deviceinfo disk
+diagnose hardware test suite all
+diagnose sys flash list
+execute disk list`;
+    
+    subsections.push({
+        title: 'Hardware Health Checks',
+        commands: hardwareCommands
+    });
+    
     return subsections;
 }
 
@@ -507,6 +569,9 @@ diag debug cli 0`;
 function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount) {
     const sections = [];
     let sectionNum = 1;
+    const sessionTopics = ['traffic', 'ipsec', 'sslvpn', 'routing'];
+    const networkTopics = ['traffic', 'routing', 'system'];
+    const fortiguardTopics = ['utm', 'system'];
     
     // Always include global debug boilerplate
     sections.push({
@@ -514,6 +579,22 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
         commands: generateGlobalDebug(),
         type: 'string'
     });
+    
+    if (sessionTopics.includes(topic)) {
+        sections.push({
+            title: `${sectionNum++}. Session Table Workflow`,
+            commands: generateSessionTableCommands(srcip, daddr, proto, dstport),
+            type: 'string'
+        });
+    }
+    
+    if (networkTopics.includes(topic)) {
+        sections.push({
+            title: `${sectionNum++}. Network Diagnostics Quick Reference`,
+            commands: generateNetworkDiagnosticsCommands(),
+            type: 'string'
+        });
+    }
     
     // Topic-specific commands
     switch(topic) {
@@ -640,6 +721,14 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
             });
             sectionNum++;
             break;
+    }
+    
+    if (fortiguardTopics.includes(topic)) {
+        sections.push({
+            title: `${sectionNum++}. FortiGuard & Logging Helpers`,
+            commands: generateFortiGuardLoggingCommands(),
+            type: 'string'
+        });
     }
     
     // Always include cleanup at the end
