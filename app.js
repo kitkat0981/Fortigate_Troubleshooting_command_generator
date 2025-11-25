@@ -588,14 +588,6 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
         });
     }
     
-    if (networkTopics.includes(topic)) {
-        sections.push({
-            title: `${sectionNum++}. Network Diagnostics Quick Reference`,
-            commands: generateNetworkDiagnosticsCommands(),
-            type: 'string'
-        });
-    }
-    
     // Topic-specific commands
     switch(topic) {
         case 'traffic':
@@ -733,10 +725,18 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
     
     // Always include cleanup at the end
     sections.push({
-        title: `${sectionNum}. Cleanup Commands`,
+        title: `${sectionNum++}. Cleanup Commands`,
         commands: generateCleanupCommands(),
         type: 'string'
     });
+    
+    if (networkTopics.includes(topic)) {
+        sections.push({
+            title: `${sectionNum++}. Network Diagnostics Quick Reference (Optional)`,
+            commands: generateNetworkDiagnosticsCommands(),
+            type: 'string'
+        });
+    }
     
     return sections;
 }
