@@ -90,23 +90,6 @@ Verbosity:
   3 = include more header info
   4 = include payload hex
 
-Network diagnostics quick reference
------------------------------------
-
-  execute ping-options repeat 5 size 1200
-  execute ping <dstip>
-  execute traceroute <dstip>
-  get system arp
-  diagnose ip arp list
-  diagnose netlink brctl list
-  diagnose netlink brctl name host <switch-name>
-  get system interface
-  get sys interface physical
-  diagnose ip address list
-  diagnose hardware deviceinfo nic <interface>
-  get hardware nic <interface>
-  get sys interface transceiver
-
 
 4. IPsec VPN debug
 ------------------
@@ -404,3 +387,21 @@ When in doubt, clean up:
   diag debug disable
   diag debug reset
   diag debug cli 0
+
+
+13. Network diagnostics quick reference (optional)
+--------------------------------------------------
+
+  execute ping-options repeat 5 size 1200
+  execute ping <dstip>
+  execute traceroute <dstip>
+  get system arp
+  diagnose ip arp list
+  diagnose netlink brctl list
+  diagnose netlink brctl name host <switch-name>
+  get system interface
+  get sys interface physical
+  diagnose ip address list
+  diagnose hardware deviceinfo nic <interface>
+  get hardware nic <interface>
+  get sys interface transceiver
