@@ -651,14 +651,15 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
 
             // Optional advanced maintenance helpers (flush SA / gateways) – enabled only where docs show them.
             if (versionProfile.ipsecAdvancedMaintenance) {
-                const advancedIpsec = `# Advanced IPsec maintenance helpers (use with caution in production)
-# Flush all Phase2 tunnel SAs
+                const advancedIpsec = `Advanced IPsec maintenance helpers (use with caution in production)
+
+Flush all Phase2 tunnel SAs:
 diagnose vpn tunnel flush
 
-# Flush one or more specific Phase2 tunnels by name
+Flush one or more specific Phase2 tunnels by name:
 diagnose vpn tunnel flush <phase2-name> [additional-phase2-name]
 
-# Clear/flush IKE gateways (Phase1); combine with 'diagnose vpn ike gateway filter' if needed
+Clear/flush IKE gateways (Phase1); combine with 'diagnose vpn ike gateway filter' if needed:
 diagnose vpn ike gateway clear
 diagnose vpn ike gateway flush
 diagnose vpn ike gateway clear name <phase1-name>
@@ -686,10 +687,11 @@ diagnose vpn ike gateway flush name <phase1-name>`;
             if (versionProfile.sslvpnTunnelDeprecated) {
                 sections.push({
                     title: `${sectionNum++}. SSL VPN Version Notes`,
-                    commands: `# Note for FortiOS 7.6.3 and later:
-# SSL VPN tunnel mode is no longer supported (Agentless VPN only).
-# The debug and status commands below are still valid, but some outputs
-# may be empty or reflect only agentless/web-mode sessions on newer builds.`,
+                    commands: `Note for FortiOS 7.6.3 and later:
+
+SSL VPN tunnel mode is no longer supported (Agentless VPN only).
+The debug and status commands below are still valid, but some outputs
+may be empty or reflect only agentless / web-mode sessions on newer builds.`,
                     type: 'string'
                 });
             }
@@ -817,7 +819,7 @@ diagnose vpn ike gateway flush name <phase1-name>`;
     // Attach version metadata as a non-rendered helper section (for potential future use).
     sections.unshift({
         title: `FortiOS Version Context: ${fortiosVersion}`,
-        commands: `# FortiOS ${fortiosVersion} selected - commands follow official Fortinet CLI reference and troubleshooting cheat sheet for this branch.`,
+        commands: `FortiOS ${fortiosVersion} selected – commands are aligned to the official Fortinet CLI reference and troubleshooting cheat sheet for this branch.`,
         type: 'string'
     });
 
