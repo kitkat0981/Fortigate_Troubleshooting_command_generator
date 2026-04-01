@@ -565,15 +565,49 @@ diag debug reset
 diag debug cli 0`;
 }
 
-// Generate commands based on topic
-function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount) {
+// Normalize FortiOS version into a simple major.minor string we key off of.
+function normalizeVersion(version) {
+    if (!version) return '7.4';
+    if (version.startsWith('7.2')) return '7.2';
+    if (version.startsWith('7.4')) return '7.4';
+    if (version.startsWith('7.6')) return '7.6';
+    return '7.4';
+}
+
+// Version/feature profile table – keep version-specific behavior in one place.
+// This makes it easy to extend for 8.0+ without touching generator logic.
+const VERSION_PROFILE = {
+    '7.2': {
+        ipsecAdvancedMaintenance: false,
+        sslvpnTunnelDeprecated: false
+    },
+    '7.4': {
+        ipsecAdvancedMaintenance: true,
+        sslvpnTunnelDeprecated: false
+    },
+    '7.6': {
+        ipsecAdvancedMaintenance: true,
+        // 7.6.3+ deprecates SSL VPN tunnel mode; commands remain but may be no-ops.
+        sslvpnTunnelDeprecated: true
+    }
+};
+
+function getVersionProfile(version) {
+    const normalized = normalizeVersion(version);
+    return VERSION_PROFILE[normalized] || VERSION_PROFILE['7.4'];
+}
+
+// Generate commands based on topic and FortiOS version
+function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount, fortiosVersionRaw) {
+    const fortiosVersion = normalizeVersion(fortiosVersionRaw);
+    const versionProfile = getVersionProfile(fortiosVersion);
     const sections = [];
     let sectionNum = 1;
     const sessionTopics = ['traffic', 'ipsec', 'sslvpn', 'routing'];
     const networkTopics = ['traffic', 'routing', 'system'];
     const fortiguardTopics = ['utm', 'system'];
     
-    // Always include global debug boilerplate
+    // Always include global debug boilerplate (common across 7.2 / 7.4 / 7.6)
     sections.push({
         title: `${sectionNum++}. Global Debug Boilerplate`,
         commands: generateGlobalDebug(),
@@ -603,8 +637,8 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
             });
             break;
             
-        case 'ipsec':
-            // IPsec returns array of subsections
+        case 'ipsec': {
+            // IPsec returns array of subsections; commands are aligned to 7.4/7.6 cheat sheets.
             const ipsecSubsections = generateIPsecCommands(srcip, daddr);
             ipsecSubsections.forEach((subsection, idx) => {
                 sections.push({
@@ -614,16 +648,52 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
                 });
             });
             sectionNum++;
+
+            // Optional advanced maintenance helpers (flush SA / gateways) – enabled only where docs show them.
+            if (versionProfile.ipsecAdvancedMaintenance) {
+                const advancedIpsec = `# Advanced IPsec maintenance helpers (use with caution in production)
+# Flush all Phase2 tunnel SAs
+diagnose vpn tunnel flush
+
+# Flush one or more specific Phase2 tunnels by name
+diagnose vpn tunnel flush <phase2-name> [additional-phase2-name]
+
+# Clear/flush IKE gateways (Phase1); combine with 'diagnose vpn ike gateway filter' if needed
+diagnose vpn ike gateway clear
+diagnose vpn ike gateway flush
+diagnose vpn ike gateway clear name <phase1-name>
+diagnose vpn ike gateway flush name <phase1-name>`;
+
+                sections.push({
+                    title: `${sectionNum++}. IPsec Advanced Maintenance Helpers (Disruptive)`,
+                    commands: advancedIpsec,
+                    type: 'string'
+                });
+            }
+
             sections.push({
                 title: `${sectionNum++}. Packet Capture (Sniffer)`,
                 commands: generateSnifferCommands(srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount),
                 type: 'sniffer'
             });
             break;
-            
-        case 'sslvpn':
-            // SSL VPN returns array of subsections
+        }
+        case 'sslvpn': {
+            // SSL VPN returns array of subsections.
             const sslvpnSubsections = generateSSLVPNCommands();
+
+            // For 7.6.x, add a short note that tunnel mode is deprecated in 7.6.3+.
+            if (versionProfile.sslvpnTunnelDeprecated) {
+                sections.push({
+                    title: `${sectionNum++}. SSL VPN Version Notes`,
+                    commands: `# Note for FortiOS 7.6.3 and later:
+# SSL VPN tunnel mode is no longer supported (Agentless VPN only).
+# The debug and status commands below are still valid, but some outputs
+# may be empty or reflect only agentless/web-mode sessions on newer builds.`,
+                    type: 'string'
+                });
+            }
+
             sslvpnSubsections.forEach((subsection, idx) => {
                 sections.push({
                     title: `${sectionNum}. SSL VPN Debug - ${subsection.title}`,
@@ -638,9 +708,10 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
                 type: 'sniffer'
             });
             break;
+        }
             
-        case 'routing':
-            // Routing returns array of subsections
+        case 'routing': {
+            // Routing returns array of subsections (OSPF/BGP debug matches 7.2/7.4/7.6 docs).
             const routingSubsections = generateRoutingCommands();
             routingSubsections.forEach((subsection, idx) => {
                 sections.push({
@@ -656,9 +727,10 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
                 type: 'sniffer'
             });
             break;
+        }
             
-        case 'auth':
-            // Auth returns array of subsections
+        case 'auth': {
+            // Auth returns array of subsections (fnbamd / FSSO flow).
             const authSubsections = generateAuthCommands();
             authSubsections.forEach((subsection, idx) => {
                 sections.push({
@@ -669,9 +741,10 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
             });
             sectionNum++;
             break;
+        }
             
-        case 'ha':
-            // HA returns array of subsections
+        case 'ha': {
+            // HA returns array of subsections.
             const haSubsections = generateHACommands();
             haSubsections.forEach((subsection, idx) => {
                 sections.push({
@@ -682,9 +755,10 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
             });
             sectionNum++;
             break;
+        }
             
-        case 'utm':
-            // UTM returns array of subsections
+        case 'utm': {
+            // UTM returns array of subsections (IPS / WAD / URL filter).
             const utmSubsections = generateUTMCommands();
             utmSubsections.forEach((subsection, idx) => {
                 sections.push({
@@ -700,9 +774,10 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
                 type: 'sniffer'
             });
             break;
+        }
             
-        case 'system':
-            // System returns array of subsections
+        case 'system': {
+            // System returns array of subsections (performance / processes / hardware).
             const systemSubsections = generateSystemCommands();
             systemSubsections.forEach((subsection, idx) => {
                 sections.push({
@@ -713,6 +788,7 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
             });
             sectionNum++;
             break;
+        }
     }
     
     if (fortiguardTopics.includes(topic)) {
@@ -738,6 +814,13 @@ function generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface,
         });
     }
     
+    // Attach version metadata as a non-rendered helper section (for potential future use).
+    sections.unshift({
+        title: `FortiOS Version Context: ${fortiosVersion}`,
+        commands: `# FortiOS ${fortiosVersion} selected - commands follow official Fortinet CLI reference and troubleshooting cheat sheet for this branch.`,
+        type: 'string'
+    });
+
     return sections;
 }
 
@@ -927,6 +1010,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const proto = document.getElementById('proto').value;
         const dstport = document.getElementById('dstport').value;
         const topic = document.getElementById('troubleshootTopic').value;
+        const fortiosVersion = document.getElementById('fortiosVersion').value;
         const snifferInterface = document.getElementById('snifferInterface').value.trim();
         const snifferVerbosity = document.getElementById('snifferVerbosity').value;
         const snifferCount = document.getElementById('snifferCount').value.trim();
@@ -965,11 +1049,16 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Please select a troubleshooting topic');
             return;
         }
+
+        if (!fortiosVersion) {
+            alert('Please select a FortiOS version');
+            return;
+        }
         
         // Generate and render commands
         try {
-            console.log('Generating commands with:', { topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount });
-            const sections = generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount);
+            console.log('Generating commands with:', { topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount, fortiosVersion });
+            const sections = generateCommands(topic, srcip, daddr, proto, dstport, snifferInterface, snifferVerbosity, snifferCount, fortiosVersion);
             console.log('Generated sections:', sections);
             renderCommands(sections);
             console.log('Commands rendered successfully');

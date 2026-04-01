@@ -26,6 +26,17 @@
                 
                 <form id="configForm">
                     <div class="form-group">
+                        <label for="fortiosVersion">FortiOS Version <span class="required">*</span></label>
+                        <select id="fortiosVersion" name="fortiosVersion" required>
+                            <option value="">Select Version</option>
+                            <option value="7.2">7.2.x (LTS)</option>
+                            <option value="7.4" selected>7.4.x</option>
+                            <option value="7.6">7.6.x</option>
+                        </select>
+                        <small>Used to adjust commands to match the official FortiOS CLI for that version.</small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="troubleshootTopic">Troubleshooting Topic <span class="required">*</span></label>
                         <select id="troubleshootTopic" name="troubleshootTopic" required>
                             <option value="">Select Topic</option>
