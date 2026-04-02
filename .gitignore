@@ -56,3 +56,5 @@ build/
 config.local.js
 settings.local.json
 
+deploy.sh
+

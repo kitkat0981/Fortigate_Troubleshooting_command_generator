@@ -668,7 +668,7 @@ diagnose vpn ike gateway flush name <phase1-name>`;
                 sections.push({
                     title: `${sectionNum++}. IPsec Advanced Maintenance Helpers (Disruptive)`,
                     commands: advancedIpsec,
-                    type: 'string'
+                    type: 'note'
                 });
             }
 
@@ -692,7 +692,7 @@ diagnose vpn ike gateway flush name <phase1-name>`;
 SSL VPN tunnel mode is no longer supported (Agentless VPN only).
 The debug and status commands below are still valid, but some outputs
 may be empty or reflect only agentless / web-mode sessions on newer builds.`,
-                    type: 'string'
+                    type: 'note'
                 });
             }
 
@@ -820,7 +820,7 @@ may be empty or reflect only agentless / web-mode sessions on newer builds.`,
     sections.unshift({
         title: `FortiOS Version Context: ${fortiosVersion}`,
         commands: `FortiOS ${fortiosVersion} selected – commands are aligned to the official Fortinet CLI reference and troubleshooting cheat sheet for this branch.`,
-        type: 'string'
+        type: 'note'
     });
 
     return sections;
@@ -893,8 +893,25 @@ function renderCommands(sections) {
     container.innerHTML = '';
     
     sections.forEach((section, index) => {
+        // Handle informational note sections (no copy button, different styling)
+        if (section.type === 'note') {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'command-section note-section';
+            
+            const header = document.createElement('div');
+            header.className = 'command-section-header';
+            header.innerHTML = `<span>${section.title}</span>`;
+            noteDiv.appendChild(header);
+            
+            const body = document.createElement('div');
+            body.className = 'note-content';
+            body.textContent = section.commands || '';
+            noteDiv.appendChild(body);
+            
+            container.appendChild(noteDiv);
+        }
         // Handle sniffer commands (array of command objects)
-        if (section.type === 'sniffer' && Array.isArray(section.commands)) {
+        else if (section.type === 'sniffer' && Array.isArray(section.commands)) {
             const sectionDiv = document.createElement('div');
             sectionDiv.className = 'command-section';
             
