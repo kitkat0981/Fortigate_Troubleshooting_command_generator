@@ -442,3 +442,16 @@ header h1 {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+.app-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding: 12px 8px 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.85;
+}
+
+.app-version {
+    font-variant-numeric: tabular-nums;
+}

@@ -1,10 +1,14 @@
 # FortiGate Debug Command Generator
 
+**Version:** 1.1.0 ([`VERSION`](VERSION))
+
 A web-based tool for generating FortiGate firewall debug CLI commands based on troubleshooting scenarios. This application helps network engineers quickly generate the correct debug commands for various FortiGate troubleshooting topics.
 
 ## Features
 
-- **Interactive Command Generation**: Select a troubleshooting topic and provide parameters to generate relevant debug commands
+- **Interactive Command Generation**: Select FortiOS version, troubleshooting topic, and parameters to generate CLI-aligned debug commands
+- **FortiOS version selection**: Commands are tailored to the FortiOS release family you choose (e.g. 7.2.x, 7.4.x, 7.6.x)
+- **Dark / light theme**: Toggle from the header (preference stored in the browser)
 - **Multiple Troubleshooting Topics**:
   - Traffic / Policy / Session (Flow Debug)
   - IPsec VPN
@@ -20,6 +24,7 @@ A web-based tool for generating FortiGate firewall debug CLI commands based on t
   - Destination IP address (optional)
   - Protocol (ICMP/TCP/UDP - optional)
   - Destination port (optional)
+  - Optional sniffer options: interface, verbosity, packet count
 
 - **Smart Command Organization**:
   - Commands organized by section (Debug, Flow Trace, Sniffer, etc.)
@@ -27,18 +32,12 @@ A web-based tool for generating FortiGate firewall debug CLI commands based on t
   - Individual copy buttons for each sniffer command
   - Automatic comment removal (comments cause CLI errors)
 
-- **Secure API Key Storage** (Optional):
-  - Password-based encryption for OpenAI API keys
-  - Uses Web Crypto API (AES-256-GCM)
-  - Keys stored locally in browser only
-  - ChatGPT integration for troubleshooting suggestions
-
 ## Getting Started
 
 ### Prerequisites
 
 - A modern web browser (Chrome, Firefox, Safari, Edge)
-- For Docker deployment: Docker and Docker Compose installed
+- For Docker deployment: Docker installed (Compose v2: `docker compose`, or legacy `docker-compose`)
 
 ### Installation Options
 
@@ -46,7 +45,7 @@ A web-based tool for generating FortiGate firewall debug CLI commands based on t
 
 1. **Clone this repository:**
 ```bash
-git clone https://github.com/yourusername/Fortigate_Troubleshooting_command_generator.git
+git clone https://github.com/kitkat0981/Fortigate_Troubleshooting_command_generator.git
 cd Fortigate_Troubleshooting_command_generator
 ```
 
@@ -66,14 +65,15 @@ docker run -d -p 8080:80 --name fortigate-debug-generator --restart unless-stopp
 
 **Using Docker Compose (Alternative):**
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
+(If you use Compose V1: `docker-compose up -d`.)
 
 #### Option 2: Local Development
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/Fortigate_Troubleshooting_command_generator.git
+git clone https://github.com/kitkat0981/Fortigate_Troubleshooting_command_generator.git
 cd Fortigate_Troubleshooting_command_generator
 ```
 
@@ -95,27 +95,19 @@ cd Fortigate_Troubleshooting_command_generator
 ## Usage
 
 1. **Fill in the form**:
-   - Enter source IP (optional)
-   - Enter destination IP (optional)
-   - Select protocol (optional)
-   - Enter destination port (optional)
+   - Select FortiOS version (required)
    - Select troubleshooting topic (required)
+   - Enter source/destination IP, protocol, and port as needed (optional)
+   - Expand **Sniffer Packet Options** if you want custom sniffer interface, verbosity, or packet count
 
 2. **Generate commands**:
-   - Click "Generate Commands"
-   - Commands will be organized by section
-   - Each section has a "Copy Code" button
+   - Click **Generate Commands**
+   - Output is grouped by section; each section has a **Copy Code** button
 
 3. **Copy commands**:
-   - Click "Copy Code" on any section to copy all commands in that section
-   - For sniffer commands, each command has its own copy button
-   - Commands are automatically filtered to remove comments
-
-4. **ChatGPT Integration** (Optional):
-   - Enter your OpenAI API key in the settings section
-   - Optionally save it encrypted with a password
-   - Enable ChatGPT suggestions when generating commands
-   - Get AI-powered troubleshooting recommendations
+   - Use **Copy Code** on a section to copy all commands in that block
+   - For sniffer lines, each command has its own copy control
+   - Comment lines are stripped so pasted commands run cleanly on the CLI
 
 ## File Structure
 
@@ -124,26 +116,31 @@ Fortigate_Troubleshooting_command_generator/
 ├── index.html              # Main HTML file
 ├── styles.css              # Styling
 ├── app.js                  # Main application logic
-├── crypto-utils.js         # Encryption utilities for API key storage
 ├── fortigate_debug_cheatsheet.txt  # Reference cheatsheet
 ├── Dockerfile              # Docker image configuration
 ├── docker-compose.yml      # Docker Compose configuration
 ├── nginx.conf              # Nginx web server configuration
 ├── .dockerignore           # Files to exclude from Docker build
 ├── .gitignore              # Git ignore rules
+├── DEPLOYMENT.md           # Server deployment and Git sync workflow
+├── VERSION                 # Current app release number (keep in sync with app.js)
 ├── LICENSE                 # Custom License (Non-Commercial)
 └── README.md               # This file
 ```
 
+Personal or server-specific helper scripts (for example a local `deploy.sh`) are intentionally **not** tracked in Git; add them only on your machine and keep them out of commits (see `.gitignore`).
+
 ## Docker Deployment Guide
+
+For **cloning on a Linux server**, **updating from GitHub**, **cron-based refreshes**, and **update scripts**, use [DEPLOYMENT.md](DEPLOYMENT.md). The sections below are a quick reference for build, run, and health checks.
 
 ### Building the Docker Image
 
-On your Docker server, run:
+On your Docker host, run:
 
 ```bash
 # Clone the repository (if not already done)
-git clone https://github.com/yourusername/Fortigate_Troubleshooting_command_generator.git
+git clone https://github.com/kitkat0981/Fortigate_Troubleshooting_command_generator.git
 cd Fortigate_Troubleshooting_command_generator
 
 # Build the Docker image
@@ -164,7 +161,7 @@ docker run -d -p 8080:80 --name fortigate-debug-generator --restart unless-stopp
 
 **Using Docker Compose:**
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Managing the Container
@@ -195,21 +192,7 @@ docker stop fortigate-debug-generator
 docker rm fortigate-debug-generator
 ```
 
-**Update the application:**
-```bash
-# Pull latest changes
-git pull
-
-# Rebuild the image
-docker build -t fortigate-debug-generator .
-
-# Stop and remove old container
-docker stop fortigate-debug-generator
-docker rm fortigate-debug-generator
-
-# Run new container
-docker run -d -p 8080:80 --name fortigate-debug-generator --restart unless-stopped fortigate-debug-generator
-```
+**Update after new commits:** pull the latest code, rebuild the image, and recreate the container. See the full sequence in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Port Configuration
 
@@ -236,10 +219,9 @@ curl http://your-server-ip:8080/health
 
 ## Security Notes
 
-- **API Key Storage**: API keys are encrypted using AES-256-GCM encryption with password-based key derivation (PBKDF2)
-- **Local Storage Only**: All data is stored locally in your browser's localStorage
-- **No Server Required**: This is a client-side only application - no data is sent to any server except when using ChatGPT integration
-- **Password Protection**: The encryption password is never stored - you must enter it each time to decrypt your API key
+- **Runs in the browser**: Command generation is client-side; nothing is sent to a backend for the core tool
+- **Local preferences only**: Theme choice is stored in `localStorage` in your browser
+- **Hosted copy**: When you open the app from your own server or Docker image, serve it over HTTPS in production if the page is reachable from untrusted networks
 
 ## Troubleshooting
 
@@ -247,12 +229,7 @@ curl http://your-server-ip:8080/health
 - Ensure you're copying commands without comment lines (handled automatically)
 - Verify IP addresses are in correct format (4 octets)
 - Check that ports are within valid range (22-65535)
-
-### ChatGPT not working?
-- Verify your OpenAI API key is correct
-- Check your OpenAI account has available quota/credits
-- Ensure you have an active payment method if required
-- See error messages for specific guidance
+- Pick the FortiOS version that matches your device so CLI syntax matches your release
 
 ## Contributing
 
@@ -270,7 +247,5 @@ This tool is provided as-is for educational and troubleshooting purposes. Always
 
 ## Acknowledgments
 
-- Based on the FortiGate Debug Cheat Sheet
-- Uses Web Crypto API for secure encryption
-- ChatGPT integration powered by OpenAI API
+- Based on the FortiGate Debug Cheat Sheet (`fortigate_debug_cheatsheet.txt`)
 

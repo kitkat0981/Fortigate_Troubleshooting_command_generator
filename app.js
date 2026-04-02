@@ -1,3 +1,6 @@
+/** Application release version — keep in sync with the `VERSION` file in the repository root. */
+const APP_VERSION = '1.1.0';
+
 // Input validation functions
 function validateIP(ip) {
     const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -1009,6 +1012,11 @@ function renderCommands(sections) {
 
 // Wait for DOM to be ready before attaching event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    const versionEl = document.getElementById('appVersion');
+    if (versionEl) {
+        versionEl.textContent = 'v' + APP_VERSION;
+    }
+
     console.log('DOM loaded, initializing form handlers...');
     
     // Form submission handler

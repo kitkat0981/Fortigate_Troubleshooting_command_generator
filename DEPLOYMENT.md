@@ -1,6 +1,10 @@
 # Docker Server Deployment Guide
 
-This guide explains how to sync your GitHub repository with your Docker server and keep it updated.
+This guide explains how to sync your GitHub repository with your Docker server and keep it updated. For a project overview and local development (opening `index.html` or a simple HTTP server), see [README.md](README.md).
+
+**Repository note:** Personal or environment-specific automation (for example a `deploy.sh` with credentials or paths) is **not** part of this repository and is listed in `.gitignore`. Create those scripts only on the server or your machine; do not commit secrets.
+
+The release **version** is stored in the [`VERSION`](VERSION) file at the repo root and shown in the web UI; keep it in sync with `APP_VERSION` in `app.js` when you bump releases.
 
 ## Initial Setup (First Time)
 
@@ -75,6 +79,11 @@ When you make changes to the code and push to GitHub, follow these steps on your
 cd /opt/Fortigate_Troubleshooting_command_generator  # or wherever you cloned it
 
 # Pull the latest changes from GitHub
+# If Git reports "Need to specify how to reconcile divergent branches", use one of:
+#   git pull --rebase origin main
+#   git pull --no-rebase origin main
+# Or set a default once: git config pull.rebase true   # rebase on pull
+#                         git config pull.rebase false  # merge on pull
 git pull origin main
 
 # Rebuild the Docker image
@@ -138,10 +147,12 @@ cd /opt/Fortigate_Troubleshooting_command_generator
 # Pull latest changes
 git pull origin main
 
-# Rebuild and restart
-docker-compose down
-docker-compose up -d --build
+# Rebuild and restart (Compose V2)
+docker compose down
+docker compose up -d --build
 ```
+
+With Compose V1, use `docker-compose` instead of `docker compose`.
 
 ## Automated Updates with Cron (Optional)
 
@@ -226,6 +237,15 @@ git remote -v
 
 # If you need to re-authenticate, you may need to set up SSH keys or use a personal access token
 ```
+
+**"Need to specify how to reconcile divergent branches"** (Git 2.27+): your local branch and `origin/main` both have commits the other does not. Choose one:
+
+- **Rebase** (replay your local commits on top of the remote): `git pull --rebase origin main`
+- **Merge** (merge remote into your branch): `git pull --no-rebase origin main`
+
+To avoid the prompt later: `git config pull.rebase true` or `git config pull.rebase false` in this repository (or `--global` for all repos).
+
+If you intentionally want the server to match GitHub exactly and discard local commits: `git fetch origin && git reset --hard origin/main` (see "Force Pull" below—this is destructive for local commits on the server).
 
 ### Docker build fails
 ```bash

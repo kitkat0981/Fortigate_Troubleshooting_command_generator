@@ -1,6 +1,10 @@
 # Use nginx alpine as base image (lightweight)
 FROM nginx:alpine
 
+LABEL org.opencontainers.image.title="FortiGate Debug Command Generator" \
+      org.opencontainers.image.version="1.1.0" \
+      org.opencontainers.image.description="Web-based FortiGate debug CLI command generator"
+
 # Copy all static files to nginx html directory
 COPY index.html /usr/share/nginx/html/
 COPY styles.css /usr/share/nginx/html/
